@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
 using Http2;
 using Http2.Hpack;
 
@@ -94,15 +95,11 @@ class Program
 
         app.OnExecute(async () =>
         {
-            // Setup log filtering
-            Func<string, LogLevel, bool> logFilter =
-                (s, level) => level >= LogLevel.Information;
-            if (verboseOption.HasValue())
-            {
-                verbose = true;
-                logFilter = (s, level) => true;
-            }
-            logProvider = new ConsoleLoggerProvider(logFilter, true);
+            var configureNamedOptions = new ConfigureNamedOptions<ConsoleLoggerOptions>("", null);
+            var optionsFactory = new OptionsFactory<ConsoleLoggerOptions>(new[] { configureNamedOptions }, Enumerable.Empty<IPostConfigureOptions<ConsoleLoggerOptions>>());
+            var optionsMonitor = new OptionsMonitor<ConsoleLoggerOptions>(optionsFactory, Enumerable.Empty<IOptionsChangeTokenSource<ConsoleLoggerOptions>>(), new OptionsCache<ConsoleLoggerOptions>());
+            logProvider = new ConsoleLoggerProvider(optionsMonitor);
+            var loggerFactory = new LoggerFactory(new[] { logProvider }, new LoggerFilterOptions { MinLevel = LogLevel.Trace });
             logger = logProvider.CreateLogger("app");
 
             if (String.IsNullOrEmpty(uriArgument.Value))

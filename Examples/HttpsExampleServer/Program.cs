@@ -15,12 +15,17 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Http2;
 using Http2.Hpack;
+using Microsoft.Extensions.Options;
 
 class Program
 {
     static void Main(string[] args)
     {
-        var logProvider = new ConsoleLoggerProvider((s, level) => true, true);
+        var configureNamedOptions = new ConfigureNamedOptions<ConsoleLoggerOptions>("", null);
+        var optionsFactory = new OptionsFactory<ConsoleLoggerOptions>(new[] { configureNamedOptions }, Enumerable.Empty<IPostConfigureOptions<ConsoleLoggerOptions>>());
+        var optionsMonitor = new OptionsMonitor<ConsoleLoggerOptions>(optionsFactory, Enumerable.Empty<IOptionsChangeTokenSource<ConsoleLoggerOptions>>(), new OptionsCache<ConsoleLoggerOptions>());
+        var logProvider = new ConsoleLoggerProvider(optionsMonitor);
+
         // Create a TCP socket acceptor
         var listener = new TcpListener(IPAddress.Any, 8889);
         listener.Start();

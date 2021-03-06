@@ -55,12 +55,21 @@ namespace Http2
                 var readTask = stream.ReadAsync(buffer.Array, buffer.Offset, buffer.Count);
                 Task<StreamReadResult> transformedTask = readTask.ContinueWith(tt =>
                 {
+                    int res = 0;
+
                     if (tt.Exception != null)
                     {
-                        throw tt.Exception;
+                        ((AggregateException)tt.Exception).Handle(inner =>
+                        {
+                            // Ignore ObjectDisposedException
+                            return inner is ObjectDisposedException;
+                        });
+                    }
+                    else
+                    {
+                        res = tt.Result;
                     }
 
-                    var res = tt.Result;
                     return new StreamReadResult
                     {
                         BytesRead = res,
